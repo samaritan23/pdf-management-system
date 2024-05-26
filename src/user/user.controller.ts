@@ -5,8 +5,8 @@ import {
   Res,
   ValidationPipe,
   UseFilters,
-  //   UseInterceptors,
-  //   UploadedFile,
+  UseInterceptors,
+  UploadedFile,
   Get,
   Req,
   UseGuards,
@@ -17,15 +17,15 @@ import {
 } from '@nestjs/common';
 import {
   GetAllUsersResponseDto,
-  //   ImageResponseDto,
+  ImageResponseDto,
   LoginUserResponseDto,
   SignUpDto,
   UserLoginDto,
 } from '../dto/user.dto';
 import { UserService } from './user.service';
 import { GlobalExceptionFilter } from '../global-exception.filter';
-// import { FileInterceptor } from '@nestjs/platform-express';
-// import * as multer from 'multer';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as multer from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('user')
@@ -114,5 +114,14 @@ export class UserController {
 
     // If the user is an admin, fetch all users
     return this.userService.getAllUsers(page);
+  }
+
+  @Post('upload')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image'))
+  async uploadImage(
+    @UploadedFile() image: multer.File,
+  ): Promise<ImageResponseDto> {
+    return await this.userService.uploadImage(image);
   }
 }

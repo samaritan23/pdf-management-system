@@ -10,19 +10,19 @@ import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 import * as jwt from 'jsonwebtoken';
 // import { S3 } from 'aws-sdk';
-// import * as multer from 'multer';
+import * as multer from 'multer';
 
 import {
   CreateUserResponseDto,
   GetAllUsersResponseDto,
-  //   ImageResponseDto,
+  ImageResponseDto,
   LoginUserResponseDto,
   SignUpDto,
   UserLoginDto,
 } from '../dto/user.dto';
 import { User } from '../schemas/user.schema';
 
-// import uploadToS3 from '../utils/s3';
+import uploadToS3 from '../utils/s3';
 
 @Injectable()
 export class UserService {
@@ -90,31 +90,31 @@ export class UserService {
     }
   }
 
-  //   async uploadImage(image: multer.File): Promise<ImageResponseDto> {
-  //     try {
-  //       // Save the image to S3 and get the URL
-  //       const imageUrl = await uploadToS3(image);
-  //       console.log(imageUrl);
-  //       const imagePath = imageUrl.Location;
-  //       const filename = imagePath.substring(imagePath.lastIndexOf('/') + 1);
-  //       // const galleryEntry = new this.galleryModel({
-  //       //   imageUrl: filename,
-  //       //   uploadedAt: Math.floor(Date.now() / 1000),
-  //       // });
-  //       // await galleryEntry.save();
-  //       const response = new ImageResponseDto(
-  //         true,
-  //         'Image uploaded successfully',
-  //         200,
-  //         filename || ' ',
-  //       );
+  async uploadImage(image: multer.File): Promise<ImageResponseDto> {
+    try {
+      // Save the image to S3 and get the URL
+      const imageUrl = await uploadToS3(image);
+      console.log(imageUrl);
+      const imagePath = imageUrl.Location;
+      const filename = imagePath.substring(imagePath.lastIndexOf('/') + 1);
+      // const galleryEntry = new this.galleryModel({
+      //   imageUrl: filename,
+      //   uploadedAt: Math.floor(Date.now() / 1000),
+      // });
+      // await galleryEntry.save();
+      const response = new ImageResponseDto(
+        true,
+        'Image uploaded successfully',
+        200,
+        filename || ' ',
+      );
 
-  //       return response;
-  //     } catch (error) {
-  //       console.error('Error uploading image:', error);
-  //       throw error;
-  //     }
-  //   }
+      return response;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      throw error;
+    }
+  }
 
   /*
     Login User Function 
