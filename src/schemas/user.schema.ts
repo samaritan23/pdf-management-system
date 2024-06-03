@@ -23,8 +23,17 @@ export class User extends Document {
   @Prop({ default: true })
   isActive: boolean;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: '1717261302907_user.png' })
   profilePic: string;
+
+  @Prop({ default: false })
+  isEmailVerified: boolean;
+
+  @Prop()
+  emailVerificationToken: string;
+
+  @Prop({ type: Number })
+  emailVerificationExpires: number;
 
   @Prop({ type: Number, default: () => Math.floor(Date.now() / 1000) })
   createdAt: number;

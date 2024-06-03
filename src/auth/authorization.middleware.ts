@@ -20,7 +20,6 @@ export class AuthorizationMiddleware implements NestMiddleware {
           userId: decodedToken.userId,
           userType: decodedToken.userType,
         };
-        console.log('Decoded Token:', decodedToken);
       } catch (error) {
         // Handle token verification error if needed
         console.error('Token verification error:', error);

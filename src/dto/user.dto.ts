@@ -54,7 +54,7 @@ export class SignUpDto {
   @IsString({ message: 'isActive: isActive must be a string' })
   isActive: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString({ message: 'profilePic: profilePic must be a string' })
   profilePic: string;
 
@@ -177,12 +177,7 @@ export class GetAllUsersResponseDto {
     public success: boolean,
     public message: string,
     public statusCode: number,
-    public paginationInfo: {
-      totalUsers: number;
-      totalPages: number;
-      currentPage: number;
-    },
-    public users?: User[],
+    public data?: any[],
   ) {}
 }
 

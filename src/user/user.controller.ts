@@ -5,27 +5,20 @@ import {
   Res,
   ValidationPipe,
   UseFilters,
-  UseInterceptors,
-  UploadedFile,
   Get,
   Req,
   UseGuards,
-  ForbiddenException,
   Query,
-  Param,
+  BadRequestException,
   // Param,
 } from '@nestjs/common';
 import {
   GetAllUsersResponseDto,
-  ImageResponseDto,
-  LoginUserResponseDto,
   SignUpDto,
   UserLoginDto,
 } from '../dto/user.dto';
 import { UserService } from './user.service';
 import { GlobalExceptionFilter } from '../global-exception.filter';
-import { FileInterceptor } from '@nestjs/platform-express';
-import * as multer from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('user')
@@ -38,23 +31,33 @@ export class UserController {
     Postman Endpoint: POST: {{url}}/user/create
      */
   @Post('create')
-  // @UseInterceptors(FileInterceptor('profilePic'))
   async signUp(
     @Body(new ValidationPipe()) signUpDto: SignUpDto,
-    // @UploadedFile() profilePic: multer.File,
     @Res() res,
   ): Promise<void> {
-    // console.log(profilePic);
-    const response = await this.userService.createUser(signUpDto);
-    res.status(response.statusCode).json(response);
+    try {
+      const response = await this.userService.createUser(signUpDto);
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      throw error;
+    }
   }
-  //   @Post('upload')
-  //   @UseInterceptors(FileInterceptor('image'))
-  //   async uploadImage(
-  //     @UploadedFile() image: multer.File,
-  //   ): Promise<ImageResponseDto> {
-  //     return await this.userService.uploadImage(image);
-  //   }
+
+  @Get('verify-email')
+  async verifyEmail(
+    @Query('token') token: string,
+  ): Promise<{ success: true; message: string }> {
+    try {
+      if (token) {
+        await this.userService.verifyEmail(token);
+        return { success: true, message: 'Email verified successfully' };
+      } else {
+        throw new BadRequestException('Token does not exist');
+      }
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
   /*
     used to login a user
     Postman Endpoint: POST: {{url}}/user/login
@@ -78,22 +81,6 @@ export class UserController {
     return this.userService.getUserById(userId);
   }
 
-  @Get('users/:userId')
-  @UseGuards(JwtAuthGuard)
-  async getUserByIdByAdmin(
-    @Param('userId') userId: string,
-    @Req() req,
-  ): Promise<LoginUserResponseDto> {
-    const userType = req.user.userType;
-
-    // Check if the user is an admin
-    if (userType !== 'admin') {
-      throw new ForbiddenException('Only admins can access this resource');
-    }
-
-    // Fetch user by ID
-    return this.userService.getUserByIdForAdmin(userId);
-  }
   /*
     used fetch all users
     only admin can perform this action
@@ -101,27 +88,7 @@ export class UserController {
      */
   @Get('/all')
   @UseGuards(JwtAuthGuard)
-  async getAllUsers(
-    @Req() req,
-    @Query('page') page: number = 1,
-  ): Promise<GetAllUsersResponseDto> {
-    const userType = req.user.userType;
-
-    // Check if the user is an admin
-    if (userType !== 'admin') {
-      throw new ForbiddenException('Only admins can access this resource');
-    }
-
-    // If the user is an admin, fetch all users
-    return this.userService.getAllUsers(page);
-  }
-
-  @Post('upload')
-  @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('image'))
-  async uploadImage(
-    @UploadedFile() image: multer.File,
-  ): Promise<ImageResponseDto> {
-    return await this.userService.uploadImage(image);
+  async getAllUsers(): Promise<GetAllUsersResponseDto> {
+    return this.userService.getAllUsers();
   }
 }

@@ -9,8 +9,7 @@ aws.config.update({
 
 async function uploadToS3(profilePic) {
   const s3 = new S3();
-  console.log(`S3 Credentials: ${JSON.stringify(s3.config)}`);
-  const filePath = `foresight_test/${Date.now()}_${profilePic.originalname}`;
+  const filePath = `${Date.now()}_${profilePic.originalname}`;
   const uploadParams = {
     Bucket: process.env.AWS_BUCKET_NAME,
     Key: filePath,
@@ -21,7 +20,6 @@ async function uploadToS3(profilePic) {
     const s3Data = await s3.upload(uploadParams).promise();
     return s3Data;
   } catch (error) {
-    console.log(error);
     throw new Error('Failed to upload file to S3: ' + error.message);
   }
 }

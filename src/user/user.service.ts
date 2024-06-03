@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  // InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -9,20 +8,18 @@ import { validate } from 'class-validator';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 import * as jwt from 'jsonwebtoken';
-// import { S3 } from 'aws-sdk';
-import * as multer from 'multer';
-
+import { v4 as uuidv4 } from 'uuid';
+import * as nodemailer from 'nodemailer';
+import { google } from 'googleapis';
+const OAuth2 = google.auth.OAuth2;
 import {
   CreateUserResponseDto,
   GetAllUsersResponseDto,
-  ImageResponseDto,
   LoginUserResponseDto,
   SignUpDto,
   UserLoginDto,
 } from '../dto/user.dto';
 import { User } from '../schemas/user.schema';
-
-import uploadToS3 from '../utils/s3';
 
 @Injectable()
 export class UserService {
@@ -34,31 +31,109 @@ export class UserService {
     Register User Function 
     */
 
-  async createUser(
-    signUpDto: SignUpDto,
-    // profilePic: multer.File,
-  ): Promise<CreateUserResponseDto> {
+  createTransporter = async () => {
+    const oauth2Client = new OAuth2(
+      process.env.CLIENT_ID,
+      process.env.CLIENT_SECRET,
+      'https://developers.google.com/oauthplayground',
+    );
+
+    oauth2Client.setCredentials({
+      refresh_token: process.env.REFRESH_TOKEN,
+    });
+
+    try {
+      const accessToken = await oauth2Client.getAccessToken();
+
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          type: 'OAuth2',
+          user: process.env.EMAIL,
+          accessToken: accessToken.token,
+          clientId: process.env.CLIENT_ID,
+          clientSecret: process.env.CLIENT_SECRET,
+          refreshToken: process.env.REFRESH_TOKEN,
+        },
+      });
+
+      return transporter;
+    } catch (error) {
+      console.error('Error creating transporter:', error);
+      throw new Error('Failed to create transporter');
+    }
+  };
+  private async sendVerificationEmail(
+    email: string,
+    token: string,
+  ): Promise<void> {
+    try {
+      const transporter = await this.createTransporter();
+
+      const verificationUrl = `${process.env.DOMAIN}/verify-email?token=${token}`;
+
+      const mailOptions = {
+        from: process.env.EMAIL,
+        to: email,
+        subject: 'Email Verification',
+        html: `
+        <div style="background-color: #f8f8f8; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #333;">Welcome to PDF-Management System,</h2>
+        <p style="color: #555;">We are thrilled to have you on board. Our system is designed to help you manage your documents efficiently and securely.</p>
+          <p style="color: #555;">To complete your registration, please verify your email address by clicking the button below:</p>
+          <div style="margin-top: 20px;">
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${verificationUrl}" style="display: inline-block; background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Accept Invitation</a>
+        </div>
+        <p style="color: #777; margin-top: 20px;">If you did not create an account, please ignore this email.</p>
+      </div>
+
+      `,
+      };
+
+      await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error('Error in sendVerificationEmail:', error);
+      throw new Error('Failed to send verification email');
+    }
+  }
+  async createUser(signUpDto: SignUpDto): Promise<CreateUserResponseDto> {
     try {
       const validationErrors = await validate(signUpDto);
-
       if (validationErrors.length > 0) {
         const errorMessages = validationErrors
           .map((error) => Object.values(error.constraints))
           .flat()
           .join(', ');
-        console.log('Validation errors:', errorMessages);
+        console.error('Validation errors:', errorMessages);
         throw new BadRequestException(errorMessages);
       }
-      //   await this.checkS3BucketExistence();
+
       const { username, email, password, firstName, lastName, profilePic } =
         signUpDto;
-      console.log('Profile picture received:', profilePic);
-      const originalpw = password;
+      const existingUser = await this.userModel
+        .findOne({
+          $or: [{ username }, { email }],
+        })
+        .lean();
+
+      if (existingUser) {
+        if (existingUser.username === username) {
+          throw new BadRequestException('Username already exists');
+        }
+        if (existingUser.email === email) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      //   Save profile picture to S3
-      // const profilePicUrl = await uploadToS3(profilePic);
+      const emailVerificationToken = uuidv4();
+      const emailVerificationExpires =
+        Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+
+      // Send verification email before creating the user
+      await this.sendVerificationEmail(email, emailVerificationToken);
 
       const user = await this.userModel.create({
         username,
@@ -67,53 +142,41 @@ export class UserService {
         lastName,
         password: hashedPassword,
         profilePic,
+        emailVerificationToken,
+        emailVerificationExpires,
       });
 
       const fullName = `${firstName} ${lastName}`;
       const { _id, ...userData } = user.toObject();
       const modifiedUser = {
         userId: _id.toString(),
-        originalpw,
         fullName,
-        profilePic,
         ...userData,
       };
+
       return new CreateUserResponseDto(
         true,
-        'User created successfully',
+        'User created successfully. Please check your email for verification.',
         201,
         modifiedUser,
       );
     } catch (error) {
-      console.error('Error in createUser:', error);
       throw error;
     }
   }
+  async verifyEmail(token: string): Promise<void> {
+    const currentUnixTime = Math.floor(Date.now() / 1000);
+    const user = await this.userModel.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: currentUnixTime },
+    });
 
-  async uploadImage(image: multer.File): Promise<ImageResponseDto> {
-    try {
-      // Save the image to S3 and get the URL
-      const imageUrl = await uploadToS3(image);
-      console.log(imageUrl);
-      const imagePath = imageUrl.Location;
-      const filename = imagePath.substring(imagePath.lastIndexOf('/') + 1);
-      // const galleryEntry = new this.galleryModel({
-      //   imageUrl: filename,
-      //   uploadedAt: Math.floor(Date.now() / 1000),
-      // });
-      // await galleryEntry.save();
-      const response = new ImageResponseDto(
-        true,
-        'Image uploaded successfully',
-        200,
-        filename || ' ',
-      );
-
-      return response;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      throw error;
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token');
     }
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    await user.save();
   }
 
   /*
@@ -135,10 +198,11 @@ export class UserService {
     if (!isPasswordValid) {
       throw new BadRequestException('Invalid credentials');
     }
+    if (!user.isEmailVerified) {
+      throw new BadRequestException('Your Email is not verified please verify');
+    }
 
     const token = this.generateToken(user);
-    console.log('user', user);
-    console.log('fname', user.firstName);
     const fullName = `${user.firstName} ${user.lastName}`;
     const { _id, ...userData } = user.toObject();
     const modifiedUser = { userId: _id.toString(), fullName, ...userData };
@@ -178,71 +242,30 @@ export class UserService {
     );
   }
 
-  async getUserByIdForAdmin(userId: string): Promise<LoginUserResponseDto> {
-    // Find the user by ID
-    const user = await this.userModel.findById(userId, {
-      password: 0,
-      __v: 0,
-      isActive: 0,
-    });
-
-    // If user not found, throw NotFoundException
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Prepare response DTO
-    const fullName = `${user.firstName} ${user.lastName}`;
-    const modifiedUser = {
-      userId: user._id.toString(),
-      fullName: fullName,
-      ...user.toObject(),
-      _id: undefined,
-    };
-
-    // Return the user data
-    return new LoginUserResponseDto(
-      true,
-      'Fetched User Data Successfully',
-      200,
-      modifiedUser,
-    );
-  }
   /*
     Get All users Function 
     Only admin can get all users
     */
-  async getAllUsers(page: number): Promise<GetAllUsersResponseDto> {
-    console.log('entering get all');
-    const perPage = 10;
-    const skip = (page - 1) * perPage;
+  async getAllUsers(): Promise<GetAllUsersResponseDto> {
+    try {
+      const users = await this.userModel.find().select('-password -__v').lean();
 
-    const users = await this.userModel
-      .find({ isActive: true }, { password: 0, __v: 0, isActive: 0 })
-      .skip(skip)
-      .limit(perPage)
-      .lean();
+      const modifiedUsers = users.map((user) => {
+        const { _id, firstName, lastName, email, profilePic } = user;
+        const fullName = `${firstName} ${lastName}`;
+        return { userId: _id.toString(), fullName, email, profilePic };
+      });
 
-    console.log('Users:', users);
-    const totalUsers = await this.userModel.countDocuments({ isActive: true });
-    const totalPages = Math.ceil(totalUsers / perPage);
-
-    const modifiedUsers = users.map((user) => {
-      const fullName = `${user.firstName} ${user.lastName}`;
-      return { ...user, userId: user._id.toString(), _id: undefined, fullName };
-    });
-
-    return new GetAllUsersResponseDto(
-      true,
-      'Fetched all users successfully',
-      200,
-      {
-        totalUsers,
-        totalPages,
-        currentPage: page || 1,
-      },
-      modifiedUsers,
-    );
+      return new GetAllUsersResponseDto(
+        true,
+        'Fetched all users successfully',
+        200,
+        modifiedUsers,
+      );
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw new Error('Failed to fetch users');
+    }
   }
 
   async findUserByEmailOrUsername(

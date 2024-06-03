@@ -14,7 +14,6 @@ export class JwtAuthGuard implements CanActivate {
   canActivate(
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
-    console.log('Inside JwtAuthGuard canActivate');
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request.headers.authorization);
 
@@ -22,12 +21,10 @@ export class JwtAuthGuard implements CanActivate {
       console.error('Token not found in the authorization header.');
       return false;
     }
-    console.log('Token:', token);
     return this.authService
       .verifyToken(token)
       .then((decodedToken) => {
         request.user = decodedToken as { userId: string; user: string };
-        console.log('Authenticated user:', request.user);
         return true;
       })
       .catch((error) => {
