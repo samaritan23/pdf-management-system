@@ -38,7 +38,7 @@ The PDF-Management System is a comprehensive application designed to help users 
 
     ```bash
     git clone https://github.com/samaritan23/pdf-management-system-backend.git
-    cd pdf-management-system
+    cd pdf-management-system-backend
     ```
 
 2. Install dependencies:
