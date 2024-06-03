@@ -246,9 +246,12 @@ export class UserService {
     Get All users Function 
     Only admin can get all users
     */
-  async getAllUsers(): Promise<GetAllUsersResponseDto> {
+  async getAllUsers(userId): Promise<GetAllUsersResponseDto> {
     try {
-      const users = await this.userModel.find().select('-password -__v').lean();
+      const users = await this.userModel
+        .find({ _id: { $ne: userId } })
+        .select('-password -__v')
+        .lean();
 
       const modifiedUsers = users.map((user) => {
         const { _id, firstName, lastName, email, profilePic } = user;

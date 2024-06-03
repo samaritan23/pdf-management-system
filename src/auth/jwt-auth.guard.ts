@@ -29,7 +29,6 @@ export class JwtAuthGuard implements CanActivate {
       })
       .catch((error) => {
         console.error('Token verification failed:', error.message);
-        console.error('Received Token for Verification:', token);
         console.error('Request URL:', request.url);
 
         throw new UnauthorizedException('Unauthorized');
@@ -42,9 +41,6 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const [bearer, token] = authorizationHeader.split(' ');
-
-    console.error('Token: ', token);
-    console.error('bearer: ', bearer);
 
     if (bearer !== 'Bearer' || !token) {
       return null;
