@@ -176,3 +176,7 @@ Global error handling is implemented using a global exception filter. Unique con
 3.  Commit your changes (git commit -m 'Add some feature').
 4.  Push to the branch (git push origin feature/your-feature).
 5.  Open a pull request.
+
+## Deployed link
+
+The project is deployed [here](https://pdf-management-system-frontend.onrender.com). You can access the deployed version to see the live application.
