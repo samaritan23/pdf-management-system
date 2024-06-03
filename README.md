@@ -73,11 +73,11 @@ The PDF-Management System is a comprehensive application designed to help users 
     - Payload:
       ```json
       {
-      "username": "johndoe",
-      "email": "johndoe@example.com",
-      "password": "yourpassword",
-      "firstName": "John",
-      "lastName": "Doe",
+        "username": "johndoe",
+        "email": "johndoe@example.com",
+        "password": "yourpassword",
+        "firstName": "John",
+        "lastName": "Doe",
       }
       ```
 2.  **Verify Email**:
@@ -92,8 +92,8 @@ The PDF-Management System is a comprehensive application designed to help users 
     - Description: Checks for valid user credentials to allow login.
       ```json
       {
-      "emailOrUsername": "johndoe",
-      "password": "yourpassword",
+        "emailOrUsername": "johndoe",
+        "password": "yourpassword",
       }
       ```
 
