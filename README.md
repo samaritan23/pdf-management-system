@@ -1,73 +1,178 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# PDF-Management System
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Table of Contents
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+- [Introduction](#introduction)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [User Registration and Email Verification](#user-registration-and-email-verification)
+  - [PDF Management](#pdf-management)
+- [Error Handling](#error-handling)
+- [Contributing](#contributing)
+## Introduction
 
-## Description
+The PDF-Management System is a comprehensive application designed to help users manage their PDF documents efficiently. The system allows users to upload, share, and comment on PDFs. It also includes email verification for user registration and pdf sharing.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
+
+- User Registration and Login
+- Email Verification
+- Upload and Share PDFs
+- Comment on PDFs
+- Manage User Access to PDFs
+- Revoked Access Handling
+- Email Notifications for Verification and PDF Sharing
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- MongoDB
 
 ## Installation
 
-```bash
-$ npm install
-```
+1.  Clone the repository:
 
-## Running the app
+    ```bash
+    git clone https://github.com/samaritan23/pdf-management-system-backend.git
+    cd pdf-management-system
+    ```
 
-```bash
-# development
-$ npm run start
+2. Install dependencies:
 
-# watch mode
-$ npm run start:dev
+    ```bash
+    npm install
+    ```
 
-# production mode
-$ npm run start:prod
-```
+3. Set up the environment variables
+    ```bash
+    PORT=3000
+    MONGODB_URI=mongodb://localhost:27017/pdf_management
+    JWT_SECRET=your_jwt_secret
+    EMAIL=your_email@example.com
+    CLIENT_ID=your_google_oauth_client_id
+    CLIENT_SECRET=your_google_oauth_client_secret
+    REFRESH_TOKEN=your_google_oauth_refresh_token
+    ```
+4. Run the application:
 
-## Test
+    ```bash
+    npm start
+    ```
 
-```bash
-# unit tests
-$ npm run test
+## Usage
 
-# e2e tests
-$ npm run test:e2e
+### User Registration and Email Verification
 
-# test coverage
-$ npm run test:cov
-```
+1.  **Sign Up**:
 
-## Support
+    - Endpoint: `POST /user/create`
+    - Description: Registers a new user.
+    - Payload:
+      ```json
+      {
+      "username": "johndoe",
+      "email": "johndoe@example.com",
+      "password": "yourpassword",
+      "firstName": "John",
+      "lastName": "Doe",
+      }
+      ```
+2.  **Verify Email**:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+    - Endpoint: `GET /user/verify-email`
+    - Description: Verifies user's email address.
+    - Query Parameter: `token` (the token sent to the user's email)
 
-## Stay in touch
+3.  **Login User**:
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+    - Endpoint: `POST /user/login`
+    - Description: Checks for valid user credentials to allow login.
+      ```json
+      {
+      "emailOrUsername": "johndoe",
+      "password": "yourpassword",
+      }
+      ```
 
-## License
+### PDF Management
 
-Nest is [MIT licensed](LICENSE).
+Note that all the endpoints here protected with Bearer token authentication so please make sure to add it to your headers
+
+1.  **Upload Document**:
+
+    - Endpoint: `POST /documents/upload`
+    - Description: Uploads a new document.
+    - Payload: Multipart/form-data with the document file.
+
+    file: (upload file from local Machine)
+    title: Example Title
+    category: Example Category
+
+2.  **Share Document By Public Link**:
+
+    - Endpoint: `POST /documents/shareable-link/:documentId`
+    - Description: Generated a sharable url of the document a document
+
+3.  **Share Document via Email Invite**:
+    - Endpoint: `POST /documents/grant-access/:documentId`
+    - Description: Shares a link in the email which allows the user to view the file
+    - Payload:
+
+    ```json
+    {
+
+    	"userId":  "ObjectID(user)"
+    	/* the userId is of the user with whom the file is being
+    	shared with */
+
+    }
+    ```
+
+4.  **Handle Open Shared Link**:
+    - Endpoint: `GET /documents/open-link`
+    - Description: Opens a shared document using a link or token.
+    - Query Parameters: `token` (the verification token)
+
+5.  **Get All User's Document**:
+    - Endpoint: `GET documents/user-documents`
+    - Description: Shows all the documents that the user owns and is shared with them.
+
+6.  **Add Comments and Replies to Document**:
+    - Endpoint: `POST documents/add-comment/:documentId`
+    - Description: Allows users to add replies and comments to a document
+    - Payload:
+
+    ```json
+        {
+          "comment": "Hello comment"
+        }
+    ```
+
+    ```json
+        {
+          "comment":  "Hello Reply",
+          "parentCommentId":  "665c8b197b6e8b2664783ebd"
+        }
+    ```
+
+ 7. **Get All Comments and Replies for a Document**:
+	 -	Endpoint: GET documents/replies/:documentID
+	 -	Description: Get all the comments and replies for a document
+
+
+
+## Error Handling
+
+Global error handling is implemented using a global exception filter. Unique constraint errors are handled gracefully to provide user-friendly error messages.
+
+
+## Contributing
+
+1.  Fork the repository.
+2.  Create your feature branch (git checkout -b feature/your-feature).
+3.  Commit your changes (git commit -m 'Add some feature').
+4.  Push to the branch (git push origin feature/your-feature).
+5.  Open a pull request.
