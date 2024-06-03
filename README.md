@@ -11,6 +11,7 @@
   - [PDF Management](#pdf-management)
 - [Error Handling](#error-handling)
 - [Contributing](#contributing)
+- [Live Project](#deployed-link)
 ## Introduction
 
 The PDF-Management System is a comprehensive application designed to help users manage their PDF documents efficiently. The system allows users to upload, share, and comment on PDFs. It also includes email verification for user registration and pdf sharing.
