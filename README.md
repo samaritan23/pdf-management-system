@@ -60,7 +60,7 @@ The PDF-Management System is a comprehensive application designed to help users 
 4. Run the application:
 
     ```bash
-    npm start
+    npm run start:dev
     ```
 
 ## Usage
